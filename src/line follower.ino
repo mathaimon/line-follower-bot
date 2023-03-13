@@ -1,97 +1,437 @@
 #include <Arduino.h>
 
-int leftIR = 3;    //Left IR sensor line follower
-int rightIR = 4;   //Right IR sensor line follower 
-int middleIR = 5;  //Middle IR sensor line follower 
+int totalSlots = 3;       
+int allotedSlot = 1;
+int currentSlot = 0;
 
-int hallEffect = 6;
+const int trigPin = 9;
+const int echoPin = 10;
+long duration;
+int distance;
+int minThreshold = 25;
+int maxThreshold = 30;
 
-int leftMotorCW = 7;      //left motor rotates clockwise
-int leftMotorCCW = 8;     //left motor rotates anti-clockwise
-int leftMotorEN = 9;      //left motor enable pin
 
-int rightMotorCW = 10;    //right motor rotates clockwise
-int rightMotorCCW = 11;   //right motor rotates anti-clockwise
-int rightMotorEN = 12;    //right motor enable pin
+int lastStateHallEffect = 1;
+int currentStateHallEffect = 1;
+//delay for halleffect sensor, so it doesn't take multiple readings from single magnet
+unsigned long delay_HallEffect = 1000;
+unsigned long previousMillis_HallEffect = 0;
+unsigned long currentMillis_HallEffect = 0;
+//delay for parking the vehicle in the alloted slot
+// unsigned long delay_Parking = 10000;
+// unsigned long previousMillis_Parking = 0;
+// unsigned long currentMillis_Parking = 0;
 
-int ir1;
-int ir2;
-int ir3;
-int ir4;
+int parked = 0;                        //whether the vehicle is parked or not in the alloted slot (0 - not parked and 1 - parked)
+
+
+int leftIR = 12;                       //Left IR sensor for line following
+int middleIR = 13;                     //Middle IR sensor for line following
+int rightIR = 15;                      //Right IR sensor for line following
+ 
+
+int hallEffect =10 ;
+
+int leftMotorForward = 2;              //left motor rotates forward
+int leftMotorBackward = 14;            //left motor rotates backward
+// int leftMotorEN = 0;                   //left motor enable pin
+
+int rightMotorForward = 5;             //right motor rotates forward
+int rightMotorBackward = 16;           //right motor rotates backward
+// int rightMotorEN = 4;                  //right motor enable pin
+
+int leftIRVal;
+int middleIRVal;
+int rightIRVal;
+
+int lowSpeed= 100;
+int medSpeed= 175;
+int highSpeed=255;
 
 void setup() {
+  
+  Serial.begin(115200);
+  pinMode(trigPin,OUTPUT);
+  pinMode(echoPin,INPUT);
+
   pinMode(leftIR,INPUT);
   pinMode(rightIR,INPUT); 
   pinMode(middleIR,INPUT);
   pinMode(hallEffect,INPUT);
     
-  pinMode(leftMotorCW,OUTPUT);
-  pinMode(leftMotorCCW,OUTPUT);
-  pinMode(leftMotorEN,OUTPUT);
+  pinMode(leftMotorForward,OUTPUT);
+  pinMode(leftMotorBackward,OUTPUT);
+  // pinMode(leftMotorEN,OUTPUT);
 
-  pinMode(rightMotorCW,OUTPUT);
-  pinMode(rightMotorCCW,OUTPUT);
-  pinMode(rightMotorEN,OUTPUT);
+  pinMode(rightMotorForward,OUTPUT);
+  pinMode(rightMotorBackward,OUTPUT);
+  // pinMode(rightMotorEN,OUTPUT);
+}
+
+int IRSensors(){
+  if ((digitalRead(leftIR)==0 && digitalRead(rightIR)==0 && digitalRead(middleIR)==0) || 
+      (digitalRead(leftIR)==1 && digitalRead(rightIR)==1 && digitalRead(middleIR)==1)){
+        return 1;
+  }
+  else
+    return 0;
+}
+
+void IR3LineFollowing(){
+  //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
+  //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
+
+  leftIRVal = digitalRead(leftIR);
+  rightIRVal = digitalRead(rightIR);
+  middleIRVal = digitalRead(middleIR);
+  Serial.print(leftIRVal);
+  Serial.print('\t');
+  Serial.print(rightIRVal);
+  Serial.print('\t');
+  Serial.print(middleIRVal);
+  Serial.println('\t');
+
+  if (leftIRVal==LOW && middleIRVal==LOW && rightIRVal==LOW){         //When no line is detected the bot stops
+    digitalWrite(leftMotorForward,LOW);
+    digitalWrite(leftMotorBackward,LOW);
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+
+  else if (leftIRVal==LOW && middleIRVal==LOW && rightIRVal==LOW){         //When every ir sensor detects line the bot stops
+    digitalWrite(leftMotorForward,LOW);
+    digitalWrite(leftMotorBackward,LOW);
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+
+  else if (leftIRVal==HIGH  && middleIRVal==HIGH && rightIRVal==LOW){ //When the left and middle sensor is on line
+    digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
+    digitalWrite(leftMotorBackward,LOW);                              //runs forward
+    // digitalWrite(leftMotorEN,LOW);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,medSpeed);
+
+  }
+  else if (leftIRVal==HIGH && middleIRVal==LOW && rightIRVal==LOW){   //When the middle and right sensor is 'not' on line
+    digitalWrite(leftMotorForward,LOW);                               //but the left sensor is on line then,
+    analogWrite(leftMotorBackward,medSpeed);                             //left motor runs backward and right motor runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,medSpeed);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,medSpeed);
+  }
+  else if(leftIRVal==LOW  && middleIRVal==HIGH && rightIRVal==HIGH){  //When the middle and right sensor is on line
+    analogWrite(leftMotorForward,medSpeed);                              //the right motor is stopped and left motor
+    digitalWrite(leftMotorBackward,LOW);                              // runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,medSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(leftMotorEN,LOW);
+  }
+  else if(leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){   //When the left and middle sensor is 'not' on line
+    analogWrite(leftMotorForward,medSpeed);                              //but the right sensor is on line then,
+    digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,medSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,medSpeed);
+  }
+  else if(leftIRVal==LOW && middleIRVal==HIGH && rightIRVal==LOW){    //when both the left and right sensors are not on line
+    analogWrite(leftMotorForward,medSpeed);                              // and middle sensor is on line then the bot goes
+    digitalWrite(leftMotorBackward,LOW);                              // straight i.e. both the motors runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,medSpeed);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,medSpeed);
+  }
+
+}
+
+void rightIRLineFollowing(){
+  //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
+  //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
+
+  leftIRVal = digitalRead(leftIR);
+  rightIRVal = digitalRead(rightIR);
+  middleIRVal = digitalRead(middleIR);
+
+  if (middleIRVal==HIGH && rightIRVal==LOW){                          //when the right sensor is not on line and
+    analogWrite(leftMotorForward,medSpeed);                              // the middle sensor is on line then the bot goes
+    digitalWrite(leftMotorBackward,LOW);                              // straight i.e. both the motors runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if (middleIRVal==LOW && rightIRVal==LOW){                      //When the middle and right sensors are 'not' on line
+    digitalWrite(leftMotorForward,LOW);                           //left motor is stopped and right motor runs forward
+    digitalWrite(leftMotorBackward,LOW);     
+    // digitalWrite(leftMotorEN,LOW);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(middleIRVal==HIGH && rightIRVal==HIGH){                     //When the middle and right sensor is on line
+    analogWrite(leftMotorForward,medSpeed);                              //the right motor is stopped and left motor
+    digitalWrite(leftMotorBackward,LOW);                              // runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    analogWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(leftMotorEN,LOW);
+  }
+  else if(middleIRVal==LOW && rightIRVal==HIGH){                      //When the middle sensor is 'not' on line
+    analogWrite(leftMotorForward,medSpeed);                              //but the right sensor is on line then,
+    digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,LOW);
+  }
+  
+}
+
+void leftIRLineFollowing(){
+  //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
+  //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
+
+  leftIRVal = digitalRead(leftIR);
+  rightIRVal = digitalRead(rightIR);
+  middleIRVal = digitalRead(middleIR);
+
+  if (leftIRVal==HIGH  && middleIRVal==HIGH){                       //When the left and middle sensor is on line
+    digitalWrite(leftMotorForward,LOW);                           // the left motor is stopped and right motor
+    digitalWrite(leftMotorBackward,LOW);                          // runs forward
+    // digitalWrite(leftMotorEN,LOW);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if (leftIRVal==HIGH && middleIRVal==LOW){                   //When the middleis 'not' on line and
+    digitalWrite(leftMotorForward,LOW);                            //the left sensor is on line then,
+    analogWrite(leftMotorBackward,medSpeed);                          //left motor runs backward and right motor runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(leftIRVal==LOW  && middleIRVal==LOW){                    //When the left and middle sensor is 'not' on line
+    analogWrite(leftMotorForward,medSpeed);                           //left motor runs forward and right motor runs backward
+    digitalWrite(leftMotorBackward,LOW);          
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(leftIRVal==LOW && middleIRVal==HIGH){                    //when both the left not on line and 
+    analogWrite(leftMotorForward,medSpeed);                           //middle sensor is on line then the bot goes
+    digitalWrite(leftMotorBackward,LOW);                           // straight i.e. both the motors runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    analogWrite(rightMotorForward,medSpeed);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+}
+
+void reversing(){
+  //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
+  //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
+
+  leftIRVal = digitalRead(leftIR);
+  rightIRVal = digitalRead(rightIR);
+  middleIRVal = digitalRead(middleIR);
+
+  if (leftIRVal==LOW && middleIRVal==LOW && rightIRVal==LOW){         //When no line is detected the bot stops
+    digitalWrite(leftMotorForward,LOW);
+    digitalWrite(leftMotorBackward,LOW);
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+
+  else if (leftIRVal==HIGH  && middleIRVal==HIGH && rightIRVal==LOW){ //When the left and middle sensor is on line
+    digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
+    analogWrite(leftMotorBackward,medSpeed);                              //runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+  else if (leftIRVal==HIGH && middleIRVal==LOW && rightIRVal==LOW){   //When the middle and right sensor is 'not' on line
+    digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
+    analogWrite(leftMotorBackward,medSpeed);                              //runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+  else if(leftIRVal==LOW  && middleIRVal==HIGH && rightIRVal==HIGH){  //When the middle and right sensor is on line
+    digitalWrite(leftMotorForward,LOW);                              //the right motor is stopped and left motor
+    digitalWrite(leftMotorBackward,LOW);                              // runs forward
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){   //When the left and middle sensor is 'not' on line
+    digitalWrite(leftMotorForward,LOW);                              //but the right sensor is on line then,
+    digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(leftIRVal==LOW && middleIRVal==HIGH && rightIRVal==LOW){    //when both the left and right sensors are not on line
+    digitalWrite(leftMotorForward,LOW);                              // and middle sensor is on line then the bot goes
+    analogWrite(leftMotorBackward,medSpeed);                              // straight i.e. both the motors runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+}
+
+void botForward(){
+  analogWrite(leftMotorForward,lowSpeed);
+  digitalWrite(leftMotorBackward,LOW);
+  //  digitalWrite(leftMotorEN,LOW);
+  // analogWrite(leftMotorEN,lowSpeed);
+
+  analogWrite(rightMotorForward,lowSpeed);
+  digitalWrite(rightMotorBackward,LOW);
+  // digitalWrite(rightMotorEN,LOW);
+  // analogWrite(rightMotorEN,lowSpeed);
+}
+
+void botStop(){
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(leftMotorBackward,LOW);
+  //  digitalWrite(leftMotorEN,LOW);
+  // analogWrite(leftMotorEN,0);
+
+  digitalWrite(rightMotorForward,LOW);
+  digitalWrite(rightMotorBackward,LOW);
+  // digitalWrite(rightMotorEN,LOW);
+  // analogWrite(rightMotorEN,0);
 }
 
 void loop(){
+  currentMillis_HallEffect= millis();
+  currentStateHallEffect = digitalRead(hallEffect);
 
-ir1 = digitalRead(IR1); ///reading the inputs from IR sensor 1
-ir2 = digitalRead(IR2); ///readfing the inputs from IR senssor 2
-ir3 = digitalRead(IR3);  ///reading the inputs from IR sensor 3
-ir4 = digitalRead(IR4);
+  if(currentStateHallEffect != lastStateHallEffect && 
+    currentStateHallEffect == 0 && 
+    currentMillis_HallEffect-previousMillis_HallEffect >= delay_HallEffect){
+    
+      previousMillis_HallEffect=currentMillis_HallEffect;
+      lastStateHallEffect=currentStateHallEffect;
+    
+      if(currentSlot>totalSlots){
+        currentSlot=0;
+      }
+      else{
+        currentSlot++;
+      }    
+  }
 
-///adding the statements for performing the functions
-
-if (ir4==LOW)
-{
-digitalWrite(motor1,LOW);
-digitalWrite(motor1b,LOW);
-digitalWrite(motor2,LOW);
-digitalWrite(motor2b,LOW);
-}
-else if (ir1==LOW && ir2==LOW && ir3==LOW)
-{
-digitalWrite(motor1,LOW);
-digitalWrite(motor1b,LOW);
-digitalWrite(motor2,LOW);
-digitalWrite(motor2b,LOW);
-}
-
-else if (ir1==HIGH && ir2==LOW && ir3==HIGH)
-{
-  digitalWrite(motor1,HIGH);
-digitalWrite(motor1b,LOW);
-digitalWrite(motor2,LOW);
-digitalWrite(motor2b,HIGH);
-}
-else if (ir1==HIGH && ir2==LOW && ir3==LOW)
-{
-  digitalWrite(motor1,HIGH);
-digitalWrite(motor1b,LOW);
-digitalWrite(motor2,LOW);
-digitalWrite(motor2b,HIGH);
-}
-else if(ir1==LOW && ir2==HIGH  && ir3==HIGH)
-{
-digitalWrite(motor1,LOW);
-digitalWrite(motor1b,HIGH);
-digitalWrite(motor2,HIGH);
-digitalWrite(motor2b,LOW);
-}
-else if(ir1==LOW && ir2==HIGH  && ir3==LOW)
-{
-digitalWrite(motor1,LOW);
-digitalWrite(motor1b,HIGH);
-digitalWrite(motor2,HIGH);
-digitalWrite(motor2b,LOW);
-}
-else if(ir1==LOW && ir2==LOW && ir3==HIGH && ir4==HIGH)
-{
-digitalWrite(motor1,HIGH);
-digitalWrite(motor1b,LOW);
-digitalWrite(motor2,HIGH);
-digitalWrite(motor2b,LOW);
-}
-
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin, HIGH);
+  // Calculating the distance
+  distance = duration * 0.034 / 2;
+  // Prints the distance on the Serial Monitor
+  
+  if(distance<=maxThreshold){
+    botStop();
+  }
+  else if(distance<=minThreshold){
+    reversing();
+  }
+  else if (currentSlot==0 && distance>=maxThreshold){
+    IR3LineFollowing();
+  }
+  else if(currentSlot==allotedSlot && IRSensors()==0 && parked==0){
+    leftIRLineFollowing();    
+  }
+  else if (currentSlot==allotedSlot && IRSensors()==1 && parked==0){
+    parked=1;
+    botStop();
+    delay(10000);
+  }
+  else if(currentSlot!=allotedSlot && parked==0){
+    rightIRLineFollowing();
+  }
+  else if(currentSlot==allotedSlot && IRSensors()==1 && parked==1){
+    parked=0;
+    {
+      botForward();
+    }while(IRSensors()==1);    
+  }
+  else{
+    botStop();
+  }
+  
+  Serial.print(digitalRead(hallEffect));
+  Serial.print("  Distance: ");
+  Serial.println(distance);
 }
