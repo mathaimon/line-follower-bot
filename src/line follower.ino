@@ -1,45 +1,41 @@
 #include <Arduino.h>
+int leftIR = 7;                       //Left IR sensor for line following
+int middleIR = 8;                     //Middle IR sensor for line following
+int rightIR = 9;                      //Right IR sensor for line following
+ 
+int reedSwitch =12 ;
 
-int totalSlots = 3;       
-int allotedSlot = 1;
-int currentSlot = 0;
+int leftMotorForward = 5;              //left motor rotates forward
+int leftMotorBackward = 6;            //left motor rotates backward
+// int leftMotorEN = 0;                  //left motor enable pin
+int rightMotorForward = 10;             //right motor rotates forward
+int rightMotorBackward = 11;           //right motor rotates backward
+// int rightMotorEN = 4;                  //right motor enable pin
 
-const int trigPin = 9;
-const int echoPin = 10;
+const int trigPin = 15;
+const int echoPin = 14;
+
 long duration;
 int distance;
 int minThreshold = 25;
 int maxThreshold = 30;
 
+int totalSlots = 3;       
+int allotedSlot = 1;
+int currentSlot = 0;
 
-int lastStateHallEffect = 1;
-int currentStateHallEffect = 1;
-//delay for halleffect sensor, so it doesn't take multiple readings from single magnet
-unsigned long delay_HallEffect = 1000;
-unsigned long previousMillis_HallEffect = 0;
-unsigned long currentMillis_HallEffect = 0;
+int lastStatereedSwitch = 1;
+int currentStatereedSwitch = 1;
+//delay for reedSwitch sensor, so it doesn't take multiple readings from single magnet
+unsigned long delay_reedSwitch = 1000;
+unsigned long previousMillis_reedSwitch = 0;
+unsigned long currentMillis_reedSwitch = 0;
 //delay for parking the vehicle in the alloted slot
 // unsigned long delay_Parking = 10000;
 // unsigned long previousMillis_Parking = 0;
 // unsigned long currentMillis_Parking = 0;
 
 int parked = 0;                        //whether the vehicle is parked or not in the alloted slot (0 - not parked and 1 - parked)
-
-
-int leftIR = 12;                       //Left IR sensor for line following
-int middleIR = 13;                     //Middle IR sensor for line following
-int rightIR = 15;                      //Right IR sensor for line following
- 
-
-int hallEffect =10 ;
-
-int leftMotorForward = 2;              //left motor rotates forward
-int leftMotorBackward = 14;            //left motor rotates backward
-// int leftMotorEN = 0;                   //left motor enable pin
-
-int rightMotorForward = 5;             //right motor rotates forward
-int rightMotorBackward = 16;           //right motor rotates backward
-// int rightMotorEN = 4;                  //right motor enable pin
 
 int leftIRVal;
 int middleIRVal;
@@ -58,7 +54,7 @@ void setup() {
   pinMode(leftIR,INPUT);
   pinMode(rightIR,INPUT); 
   pinMode(middleIR,INPUT);
-  pinMode(hallEffect,INPUT);
+  pinMode(reedSwitch,INPUT_PULLUP);
     
   pinMode(leftMotorForward,OUTPUT);
   pinMode(leftMotorBackward,OUTPUT);
@@ -85,12 +81,12 @@ void IR3LineFollowing(){
   leftIRVal = digitalRead(leftIR);
   rightIRVal = digitalRead(rightIR);
   middleIRVal = digitalRead(middleIR);
-  Serial.print(leftIRVal);
-  Serial.print('\t');
-  Serial.print(rightIRVal);
-  Serial.print('\t');
-  Serial.print(middleIRVal);
-  Serial.println('\t');
+  // Serial.print(leftIRVal);
+  // Serial.print('\t');
+  // Serial.print(rightIRVal);
+  // Serial.print('\t');
+  // Serial.print(middleIRVal);
+  // Serial.println('\t');
 
   if (leftIRVal==LOW && middleIRVal==LOW && rightIRVal==LOW){         //When no line is detected the bot stops
     digitalWrite(leftMotorForward,LOW);
@@ -371,22 +367,22 @@ void botStop(){
 }
 
 void loop(){
-  currentMillis_HallEffect= millis();
-  currentStateHallEffect = digitalRead(hallEffect);
+  currentMillis_reedSwitch= millis();
+  currentStatereedSwitch = digitalRead(reedSwitch);
 
-  if(currentStateHallEffect != lastStateHallEffect && 
-    currentStateHallEffect == 0 && 
-    currentMillis_HallEffect-previousMillis_HallEffect >= delay_HallEffect){
+  if(currentStatereedSwitch != lastStatereedSwitch){
+    lastStatereedSwitch=currentStatereedSwitch;
+    if (currentStatereedSwitch == 0 && currentMillis_reedSwitch-previousMillis_reedSwitch >= delay_reedSwitch){
     
-      previousMillis_HallEffect=currentMillis_HallEffect;
-      lastStateHallEffect=currentStateHallEffect;
-    
+      previousMillis_reedSwitch=currentMillis_reedSwitch;
+          
       if(currentSlot>totalSlots){
         currentSlot=0;
       }
       else{
         currentSlot++;
-      }    
+      }   
+    } 
   }
 
   digitalWrite(trigPin, LOW);
@@ -401,7 +397,7 @@ void loop(){
   distance = duration * 0.034 / 2;
   // Prints the distance on the Serial Monitor
   
-  if(distance<=maxThreshold){
+  if(distance<=maxThreshold && distance>=maxThreshold){
     botStop();
   }
   else if(distance<=minThreshold){
@@ -430,8 +426,9 @@ void loop(){
   else{
     botStop();
   }
-  
-  Serial.print(digitalRead(hallEffect));
-  Serial.print("  Distance: ");
+  Serial.print(currentSlot);
+  Serial.print("  RS:");
+  Serial.print(digitalRead(reedSwitch));
+  Serial.print("  Distance:");
   Serial.println(distance);
 }
