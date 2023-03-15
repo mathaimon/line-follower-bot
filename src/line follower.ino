@@ -17,7 +17,7 @@ const int echoPin = 14;
 
 long duration;
 int distance;
-int minThreshold = 25;
+int minThreshold = 20;
 int maxThreshold = 30;
 
 int totalSlots = 3;       
@@ -36,6 +36,7 @@ unsigned long currentMillis_reedSwitch = 0;
 // unsigned long currentMillis_Parking = 0;
 
 int parked = 0;                        //whether the vehicle is parked or not in the alloted slot (0 - not parked and 1 - parked)
+int reversed = 0;
 
 int leftIRVal;
 int middleIRVal;
@@ -75,6 +76,7 @@ int IRSensors(){
 }
 
 void IR3LineFollowing(){
+  Serial.print("3333333IRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -166,6 +168,7 @@ void IR3LineFollowing(){
 }
 
 void rightIRLineFollowing(){
+  Serial.print("RIGHTIRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -219,6 +222,7 @@ void rightIRLineFollowing(){
 }
 
 void leftIRLineFollowing(){
+  Serial.print("LEFTIRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -271,7 +275,8 @@ void leftIRLineFollowing(){
   }
 }
 
-void reversing(){
+void reverseLineFollowing(){
+  Serial.print("reverseLINE");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -343,6 +348,7 @@ void reversing(){
 }
 
 void botForward(){
+  Serial.print("botForward");
   analogWrite(leftMotorForward,lowSpeed);
   digitalWrite(leftMotorBackward,LOW);
   //  digitalWrite(leftMotorEN,LOW);
@@ -354,7 +360,21 @@ void botForward(){
   // analogWrite(rightMotorEN,lowSpeed);
 }
 
+void botBackward(){
+  Serial.print("botBackward");
+  analogWrite(leftMotorForward,LOW);
+  digitalWrite(leftMotorBackward,lowSpeed);
+  //  digitalWrite(leftMotorEN,LOW);
+  // analogWrite(leftMotorEN,lowSpeed);
+
+  analogWrite(rightMotorForward,LOW);
+  digitalWrite(rightMotorBackward,lowSpeed);
+  // digitalWrite(rightMotorEN,LOW);
+  // analogWrite(rightMotorEN,lowSpeed);
+}
+
 void botStop(){
+  Serial.print("Stopped");
   digitalWrite(leftMotorForward,LOW);
   digitalWrite(leftMotorBackward,LOW);
   //  digitalWrite(leftMotorEN,LOW);
@@ -401,34 +421,44 @@ void loop(){
     botStop();
   }
   else if(distance<=minThreshold){
-    reversing();
+    reverseLineFollowing();
   }
   else if (currentSlot==0 && distance>=maxThreshold){
     IR3LineFollowing();
   }
-  else if(currentSlot==allotedSlot && IRSensors()==0 && parked==0){
+  else if(currentSlot==allotedSlot && IRSensors()==0 && parked==0 && reversed==0){
     leftIRLineFollowing();    
   }
   else if (currentSlot==allotedSlot && IRSensors()==1 && parked==0){
     parked=1;
     botStop();
     delay(10000);
-  }
-  else if(currentSlot!=allotedSlot && parked==0){
-    rightIRLineFollowing();
-  }
+  }  
   else if(currentSlot==allotedSlot && IRSensors()==1 && parked==1){
     parked=0;
     {
-      botForward();
-    }while(IRSensors()==1);    
+      botBackward();
+    }while(IRSensors()==1); 
+    // {
+    //   reverseLineFollowing();
+    // }while(IRSensors()!=1);
+    reversed=1;    
+  }
+  else if(currentSlot==allotedSlot && IRSensors()==0 && reversed==1){
+    rightIRLineFollowing();
+  }
+  else if(currentSlot!=allotedSlot && currentSlot>0 && parked==0){
+    rightIRLineFollowing();
+    reversed=0;
   }
   else{
     botStop();
   }
+
+  Serial.print("  CS:");
   Serial.print(currentSlot);
   Serial.print("  RS:");
   Serial.print(digitalRead(reedSwitch));
-  Serial.print("  Distance:");
+  Serial.print("  Dist:");
   Serial.println(distance);
 }
