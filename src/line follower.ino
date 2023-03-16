@@ -42,8 +42,8 @@ int leftIRVal;
 int middleIRVal;
 int rightIRVal;
 
-int lowSpeed= 100;
-int medSpeed= 175;
+int lowSpeed= 80;
+int medSpeed= 100;
 int highSpeed=255;
 
 void setup() {
@@ -429,29 +429,34 @@ void loop(){
   else if(currentSlot==allotedSlot && IRSensors()==0 && parked==0 && reversed==0){
     leftIRLineFollowing();    
   }
-  else if (currentSlot==allotedSlot && IRSensors()==1 && parked==0){
+  else if (currentSlot==allotedSlot && IRSensors()==1 && parked==0 && reversed==0){
     parked=1;
     botStop();
     delay(10000);
   }  
   else if(currentSlot==allotedSlot && IRSensors()==1 && parked==1){
     parked=0;
-    {
+    reversed=1;
+    do{
+      Serial.print("Back ");
       botBackward();
     }while(IRSensors()==1); 
     // {
     //   reverseLineFollowing();
     // }while(IRSensors()!=1);
-    reversed=1;    
+        
   }
-  else if(currentSlot==allotedSlot && IRSensors()==0 && reversed==1){
-    rightIRLineFollowing();
-  }
-  else if(currentSlot!=allotedSlot && currentSlot>0 && parked==0){
+  else if(currentSlot!=allotedSlot && parked==0){
     rightIRLineFollowing();
     reversed=0;
   }
+  else if(currentSlot==allotedSlot && IRSensors()==0 && reversed==1){
+    Serial.print("reverse ");
+    rightIRLineFollowing();
+  }
+  
   else{
+    Serial.print("else ");
     botStop();
   }
 
