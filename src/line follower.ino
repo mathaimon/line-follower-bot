@@ -1,4 +1,11 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 /*128 width of OLED in pixels*/
+#define SCREEN_HEIGHT 64 /*64 height of OLED in pixels*/
+
 int leftIR = 7;                       //Left IR sensor for line following
 int middleIR = 8;                     //Middle IR sensor for line following
 int rightIR = 9;                      //Right IR sensor for line following
@@ -46,9 +53,16 @@ int lowSpeed= 80;
 int medSpeed= 100;
 int highSpeed=255;
 
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 void setup() {
   
   Serial.begin(115200);
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
   pinMode(trigPin,OUTPUT);
   pinMode(echoPin,INPUT);
 
@@ -466,4 +480,21 @@ void loop(){
   Serial.print(digitalRead(reedSwitch));
   Serial.print("  Dist:");
   Serial.println(distance);
+
+  display.clearDisplay();  /*Clear display*/
+  display.setTextSize(1);  /*OLED screen text size defined*/
+  display.setTextColor(WHITE); /*OLED screen text color*/
+
+  display.setCursor(0, 0);
+  display.print("  CS:");
+  display.println(currentSlot);
+  display.setCursor(0, 10);
+  display.print("  RS:");
+  display.println(digitalRead(reedSwitch));
+  display.setCursor(0, 20);
+  display.print("  Dist:");
+  display.println(distance);
+  display.setCursor(0, 40);
+
+  display.display();
 }
