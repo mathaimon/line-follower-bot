@@ -49,8 +49,8 @@ int leftIRVal;
 int middleIRVal;
 int rightIRVal;
 
-int lowSpeed= 80;
-int medSpeed= 100;
+int lowSpeed= 60;
+int medSpeed= 120;
 int highSpeed=255;
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -80,10 +80,17 @@ void setup() {
   // pinMode(rightMotorEN,OUTPUT);
 }
 
-int IRSensors(){
-  if ((digitalRead(leftIR)==0 && digitalRead(rightIR)==0 && digitalRead(middleIR)==0) || 
-      (digitalRead(leftIR)==1 && digitalRead(rightIR)==1 && digitalRead(middleIR)==1)){
-        return 1;
+int IRSensorsOnLine(){
+  if (digitalRead(leftIR)==1 && digitalRead(rightIR)==1 && digitalRead(middleIR)==1){
+    return 1;
+  }
+  else
+    return 0;
+}
+
+int IRSensorsNotOnLine(){
+  if (digitalRead(leftIR)==0 && digitalRead(rightIR)==0 && digitalRead(middleIR)==0){
+    return 1;
   }
   else
     return 0;
@@ -91,6 +98,9 @@ int IRSensors(){
 
 void IR3LineFollowing(){
   Serial.print("3333333IRLine");
+  display.setCursor(0, 40);
+  display.print("3333333IRLine");
+
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -431,7 +441,7 @@ void loop(){
   distance = duration * 0.034 / 2;
   // Prints the distance on the Serial Monitor
   
-  if(distance<=maxThreshold && distance>=maxThreshold){
+  if(distance<=maxThreshold && distance>=minThreshold){
     botStop();
   }
   else if(distance<=minThreshold){
@@ -440,31 +450,31 @@ void loop(){
   else if (currentSlot==0 && distance>=maxThreshold){
     IR3LineFollowing();
   }
-  else if(currentSlot==allotedSlot && IRSensors()==0 && parked==0 && reversed==0){
+  else if(currentSlot==allotedSlot && IRSensorsNotOnLine()==0 && parked==0 && reversed==0){
     leftIRLineFollowing();    
   }
-  else if (currentSlot==allotedSlot && IRSensors()==1 && parked==0 && reversed==0){
+  else if (currentSlot==allotedSlot && IRSensorsNotOnLine()==1 && parked==0 && reversed==0){
     parked=1;
     botStop();
     delay(10000);
   }  
-  else if(currentSlot==allotedSlot && IRSensors()==1 && parked==1){
+  else if(currentSlot==allotedSlot && IRSensorsNotOnLine()==1 && parked==1){
     parked=0;
     reversed=1;
     do{
       Serial.print("Back ");
       botBackward();
-    }while(IRSensors()==1); 
-    // {
-    //   reverseLineFollowing();
-    // }while(IRSensors()!=1);
+    }while(IRSensorsNotOnLine()==1); 
+    do{
+      reverseLineFollowing();
+    }while(IRSensorsOnLine()==0);
         
   }
   else if(currentSlot!=allotedSlot && parked==0){
     rightIRLineFollowing();
     reversed=0;
   }
-  else if(currentSlot==allotedSlot && IRSensors()==0 && reversed==1){
+  else if(currentSlot==allotedSlot && (IRSensorsOnLine()==0 || IRSensorsNotOnLine()==0) && reversed==1){
     Serial.print("reverse ");
     rightIRLineFollowing();
   }
@@ -494,7 +504,6 @@ void loop(){
   display.setCursor(0, 20);
   display.print("  Dist:");
   display.println(distance);
-  display.setCursor(0, 40);
-
+  
   display.display();
 }
