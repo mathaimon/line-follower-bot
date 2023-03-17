@@ -193,6 +193,8 @@ void IR3LineFollowing(){
 
 void rightIRLineFollowing(){
   Serial.print("RIGHTIRLine");
+  display.setCursor(0, 40);
+  display.print("RIGHTIRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -247,6 +249,8 @@ void rightIRLineFollowing(){
 
 void leftIRLineFollowing(){
   Serial.print("LEFTIRLine");
+  display.setCursor(0, 40);
+  display.print("LEFTIRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -301,6 +305,8 @@ void leftIRLineFollowing(){
 
 void reverseLineFollowing(){
   Serial.print("reverseLINE");
+  display.setCursor(0, 40);
+  display.print("reverseLINE");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -373,6 +379,9 @@ void reverseLineFollowing(){
 
 void botForward(){
   Serial.print("botForward");
+  display.setCursor(0, 40);
+  display.print("botForward");
+
   analogWrite(leftMotorForward,lowSpeed);
   digitalWrite(leftMotorBackward,LOW);
   //  digitalWrite(leftMotorEN,LOW);
@@ -386,6 +395,8 @@ void botForward(){
 
 void botBackward(){
   Serial.print("botBackward");
+  display.setCursor(0, 40);
+  display.print("botBackward");
   analogWrite(leftMotorForward,LOW);
   digitalWrite(leftMotorBackward,lowSpeed);
   //  digitalWrite(leftMotorEN,LOW);
@@ -399,6 +410,9 @@ void botBackward(){
 
 void botStop(){
   Serial.print("Stopped");
+  display.setCursor(0, 40);
+  display.print("Stopped");
+  
   digitalWrite(leftMotorForward,LOW);
   digitalWrite(leftMotorBackward,LOW);
   //  digitalWrite(leftMotorEN,LOW);
@@ -411,6 +425,10 @@ void botStop(){
 }
 
 void loop(){
+  display.clearDisplay();  /*Clear display*/
+  display.setTextSize(1);  /*OLED screen text size defined*/
+  display.setTextColor(WHITE); /*OLED screen text color*/
+
   currentMillis_reedSwitch= millis();
   currentStatereedSwitch = digitalRead(reedSwitch);
 
@@ -491,9 +509,6 @@ void loop(){
   Serial.print("  Dist:");
   Serial.println(distance);
 
-  display.clearDisplay();  /*Clear display*/
-  display.setTextSize(1);  /*OLED screen text size defined*/
-  display.setTextColor(WHITE); /*OLED screen text color*/
 
   display.setCursor(0, 0);
   display.print("  CS:");
