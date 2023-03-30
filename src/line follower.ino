@@ -97,9 +97,9 @@ int IRSensorsNotOnLine(){
 }
 
 void IR3LineFollowing(){
-  Serial.print("3333333IRLine");
+  Serial.print("3 IRLine");
   display.setCursor(0, 30);
-  display.print("3333333IRLine");
+  display.print("3 IRLine");
 
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
