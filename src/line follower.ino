@@ -30,7 +30,6 @@ int maxThreshold = 30;
 int totalSlots = 3;       
 int allotedSlot = 1;
 int currentSlot = 0;
-
 int lastStatereedSwitch = 1;
 int currentStatereedSwitch = 1;
 //delay for reedSwitch sensor, so it doesn't take multiple readings from single magnet
@@ -44,13 +43,17 @@ unsigned long currentMillis_reedSwitch = 0;
 
 int parked = 0;                        //whether the vehicle is parked or not in the alloted slot (0 - not parked and 1 - parked)
 int reversed = 0;
+// int leftIRON =0;
+// int middleIRON =0;
+// int rightIRON =0;
+
 
 int leftIRVal;
 int middleIRVal;
 int rightIRVal;
 
 int lowSpeed= 60;
-int medSpeed= 120;
+int medSpeed= 100;
 int highSpeed=255;
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -95,6 +98,18 @@ int IRSensorsNotOnLine(){
   else
     return 0;
 }
+
+// int IRSensorON(){
+//   if (digitalRead(leftIR)==1){
+//     leftIRON=1;
+//   }
+//   if (digitalRead(middleIR)==1){
+//     middleIRON=1;
+//   }
+//   if (digitalRead(rightIR)==1){
+//     rightIRON=1;
+//   }
+// }
 
 void IR3LineFollowing(){
   Serial.print("3 IRLine");
@@ -397,13 +412,13 @@ void botBackward(){
   Serial.print("botBackward");
   display.setCursor(0, 30);
   display.print("botBackward");
-  analogWrite(leftMotorForward,LOW);
-  digitalWrite(leftMotorBackward,lowSpeed);
+  digitalWrite(leftMotorForward,LOW);
+  analogWrite(leftMotorBackward,lowSpeed);
   //  digitalWrite(leftMotorEN,LOW);
   // analogWrite(leftMotorEN,lowSpeed);
 
-  analogWrite(rightMotorForward,LOW);
-  digitalWrite(rightMotorBackward,lowSpeed);
+  digitalWrite(rightMotorForward,LOW);
+  analogWrite(rightMotorBackward,lowSpeed);
   // digitalWrite(rightMotorEN,LOW);
   // analogWrite(rightMotorEN,lowSpeed);
 }
@@ -438,14 +453,20 @@ void loop(){
     
       previousMillis_reedSwitch=currentMillis_reedSwitch;
           
-      if(currentSlot>totalSlots){
-        currentSlot=0;
+      if(currentSlot>=totalSlots){
+        currentSlot=1;
       }
       else{
         currentSlot++;
       }   
     } 
   }
+  
+  if (currentSlot==allotedSlot){
+    digitalWrite(LED_BUILTIN,HIGH);
+  }
+  else
+    digitalWrite(LED_BUILTIN,LOW);
 
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -484,8 +505,12 @@ void loop(){
       botBackward();
     }while(IRSensorsNotOnLine()==1); 
     do{
-      reverseLineFollowing();
-    }while(IRSensorsOnLine()==0);
+      // reverseLineFollowing();
+      botBackward();
+    }while(IRSensorsOnLine()==0 && IRSensorsNotOnLine()==0);
+    do{
+      botForward();
+    }while(IRSensorsNotOnLine()==1);
         
   }
   else if(currentSlot!=allotedSlot && parked==0){
@@ -501,6 +526,8 @@ void loop(){
     Serial.print("else ");
     botStop();
   }
+
+
 
   Serial.print("  CS:");
   Serial.print(currentSlot);
