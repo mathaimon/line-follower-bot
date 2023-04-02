@@ -1,10 +1,13 @@
-#include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+// NOTE:::::::
+// inverted line following i.e. line is white on black background
 
-#define SCREEN_WIDTH 128 /*128 width of OLED in pixels*/
-#define SCREEN_HEIGHT 64 /*64 height of OLED in pixels*/
+#include <Arduino.h>
+//#include <Wire.h>
+//#include <Adafruit_GFX.h>
+//#include <Adafruit_SSD1306.h>
+
+// #define SCREEN_WIDTH 128 /*128 width of OLED in pixels*/
+// #define SCREEN_HEIGHT 64 /*64 height of OLED in pixels*/
 
 int leftIR = 7;                       //Left IR sensor for line following
 int middleIR = 8;                     //Middle IR sensor for line following
@@ -56,16 +59,16 @@ int lowSpeed= 60;
 int medSpeed= 100;
 int highSpeed=255;
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+// // Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setup() {
   
   Serial.begin(115200);
 
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
-  }
+  // // if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+  //   Serial.println(F("SSD1306 allocation failed"));
+  //   for(;;);
+  // }
   pinMode(trigPin,OUTPUT);
   pinMode(echoPin,INPUT);
 
@@ -84,7 +87,7 @@ void setup() {
 }
 
 int IRSensorsOnLine(){
-  if (digitalRead(leftIR)==1 && digitalRead(rightIR)==1 && digitalRead(middleIR)==1){
+  if (digitalRead(leftIR)==0 && digitalRead(rightIR)==0 && digitalRead(middleIR)==0){
     return 1;
   }
   else
@@ -92,7 +95,7 @@ int IRSensorsOnLine(){
 }
 
 int IRSensorsNotOnLine(){
-  if (digitalRead(leftIR)==0 && digitalRead(rightIR)==0 && digitalRead(middleIR)==0){
+  if (digitalRead(leftIR)==1 && digitalRead(rightIR)==1 && digitalRead(middleIR)==1){
     return 1;
   }
   else
@@ -113,11 +116,18 @@ int IRSensorsNotOnLine(){
 
 void IR3LineFollowing(){
   Serial.print("3 IRLine");
-  display.setCursor(0, 30);
-  display.print("3 IRLine");
+  // // display.setCursor(0, 30);
+  // // display.print("3 IRLine");
 
+  //FOR BLACK LINE ON WHITE SURFACE::
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
+
+  //FOR WHITE LINE ON BLACK SURFACE::
+  //"IR sensor ON"    or    "Detects object"      or    "on line"       then the output is     "0"    or    "LOW"
+  //"IR sensor OFF"   or    "Detects no object"   or    "NOT on line"   then the output is     "1"    or    "HIGH"
+
+
 
   leftIRVal = digitalRead(leftIR);
   rightIRVal = digitalRead(rightIR);
@@ -129,7 +139,7 @@ void IR3LineFollowing(){
   // Serial.print(middleIRVal);
   // Serial.println('\t');
 
-  if (leftIRVal==LOW && middleIRVal==LOW && rightIRVal==LOW){         //When no line is detected the bot stops
+  if (leftIRVal==HIGH && middleIRVal==HIGH && rightIRVal==HIGH){         //When no line is detected the bot stops
     digitalWrite(leftMotorForward,LOW);
     digitalWrite(leftMotorBackward,LOW);
     // digitalWrite(leftMotorEN,LOW);
@@ -149,7 +159,7 @@ void IR3LineFollowing(){
     // digitalWrite(rightMotorEN,LOW);
   }
 
-  else if (leftIRVal==HIGH  && middleIRVal==HIGH && rightIRVal==LOW){ //When the left and middle sensor is on line
+  else if (leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){ //When the left and middle sensor is on line
     digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
     digitalWrite(leftMotorBackward,LOW);                              //runs forward
     // digitalWrite(leftMotorEN,LOW);
@@ -160,7 +170,7 @@ void IR3LineFollowing(){
     // analogWrite(rightMotorEN,medSpeed);
 
   }
-  else if (leftIRVal==HIGH && middleIRVal==LOW && rightIRVal==LOW){   //When the middle and right sensor is 'not' on line
+  else if (leftIRVal==LOW && middleIRVal==HIGH && rightIRVal==HIGH){   //When the middle and right sensor is 'not' on line
     digitalWrite(leftMotorForward,LOW);                               //but the left sensor is on line then,
     analogWrite(leftMotorBackward,medSpeed);                             //left motor runs backward and right motor runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -171,7 +181,7 @@ void IR3LineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,medSpeed);
   }
-  else if(leftIRVal==LOW  && middleIRVal==HIGH && rightIRVal==HIGH){  //When the middle and right sensor is on line
+  else if(leftIRVal==HIGH  && middleIRVal==LOW && rightIRVal==LOW){  //When the middle and right sensor is on line
     analogWrite(leftMotorForward,medSpeed);                              //the right motor is stopped and left motor
     digitalWrite(leftMotorBackward,LOW);                              // runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -181,7 +191,7 @@ void IR3LineFollowing(){
     digitalWrite(rightMotorBackward,LOW);
     // digitalWrite(leftMotorEN,LOW);
   }
-  else if(leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){   //When the left and middle sensor is 'not' on line
+  else if(leftIRVal==HIGH  && middleIRVal==HIGH && rightIRVal==LOW){   //When the left and middle sensor is 'not' on line
     analogWrite(leftMotorForward,medSpeed);                              //but the right sensor is on line then,
     digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
     // digitalWrite(leftMotorEN,HIGH);
@@ -192,7 +202,7 @@ void IR3LineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,medSpeed);
   }
-  else if(leftIRVal==LOW && middleIRVal==HIGH && rightIRVal==LOW){    //when both the left and right sensors are not on line
+  else if(leftIRVal==HIGH && middleIRVal==LOW && rightIRVal==HIGH){    //when both the left and right sensors are not on line
     analogWrite(leftMotorForward,medSpeed);                              // and middle sensor is on line then the bot goes
     digitalWrite(leftMotorBackward,LOW);                              // straight i.e. both the motors runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -208,8 +218,8 @@ void IR3LineFollowing(){
 
 void rightIRLineFollowing(){
   Serial.print("RIGHTIRLine");
-  display.setCursor(0, 30);
-  display.print("RIGHTIRLine");
+  // display.setCursor(0, 30);
+  // display.print("RIGHTIRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -217,8 +227,8 @@ void rightIRLineFollowing(){
   rightIRVal = digitalRead(rightIR);
   middleIRVal = digitalRead(middleIR);
 
-  if (middleIRVal==HIGH && rightIRVal==LOW){                          //when the right sensor is not on line and
-    analogWrite(leftMotorForward,medSpeed);                              // the middle sensor is on line then the bot goes
+  if (middleIRVal==LOW && rightIRVal==HIGH){                          //when the right sensor is not on line and
+    analogWrite(leftMotorForward,medSpeed);                           // the middle sensor is on line then the bot goes
     digitalWrite(leftMotorBackward,LOW);                              // straight i.e. both the motors runs forward
     // digitalWrite(leftMotorEN,HIGH);
     // analogWrite(leftMotorEN,lowSpeed);
@@ -228,7 +238,7 @@ void rightIRLineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if (middleIRVal==LOW && rightIRVal==LOW){                      //When the middle and right sensors are 'not' on line
+  else if (middleIRVal==HIGH && rightIRVal==HIGH){                      //When the middle and right sensors are 'not' on line
     digitalWrite(leftMotorForward,LOW);                           //left motor is stopped and right motor runs forward
     digitalWrite(leftMotorBackward,LOW);     
     // digitalWrite(leftMotorEN,LOW);
@@ -238,7 +248,7 @@ void rightIRLineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if(middleIRVal==HIGH && rightIRVal==HIGH){                     //When the middle and right sensor is on line
+  else if(middleIRVal==LOW && rightIRVal==LOW){                     //When the middle and right sensor is on line
     analogWrite(leftMotorForward,medSpeed);                              //the right motor is stopped and left motor
     digitalWrite(leftMotorBackward,LOW);                              // runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -248,7 +258,7 @@ void rightIRLineFollowing(){
     digitalWrite(rightMotorBackward,LOW);
     // digitalWrite(leftMotorEN,LOW);
   }
-  else if(middleIRVal==LOW && rightIRVal==HIGH){                      //When the middle sensor is 'not' on line
+  else if(middleIRVal==HIGH && rightIRVal==LOW){                      //When the middle sensor is 'not' on line
     analogWrite(leftMotorForward,medSpeed);                              //but the right sensor is on line then,
     digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
     // digitalWrite(leftMotorEN,HIGH);
@@ -264,8 +274,8 @@ void rightIRLineFollowing(){
 
 void leftIRLineFollowing(){
   Serial.print("LEFTIRLine");
-  display.setCursor(0, 30);
-  display.print("LEFTIRLine");
+  // display.setCursor(0, 30);
+  // display.print("LEFTIRLine");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -273,7 +283,7 @@ void leftIRLineFollowing(){
   rightIRVal = digitalRead(rightIR);
   middleIRVal = digitalRead(middleIR);
 
-  if (leftIRVal==HIGH  && middleIRVal==HIGH){                       //When the left and middle sensor is on line
+  if (leftIRVal==LOW  && middleIRVal==LOW){                       //When the left and middle sensor is on line
     digitalWrite(leftMotorForward,LOW);                           // the left motor is stopped and right motor
     digitalWrite(leftMotorBackward,LOW);                          // runs forward
     // digitalWrite(leftMotorEN,LOW);
@@ -283,7 +293,7 @@ void leftIRLineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if (leftIRVal==HIGH && middleIRVal==LOW){                   //When the middleis 'not' on line and
+  else if (leftIRVal==LOW && middleIRVal==HIGH){                   //When the middleis 'not' on line and
     digitalWrite(leftMotorForward,LOW);                            //the left sensor is on line then,
     analogWrite(leftMotorBackward,medSpeed);                          //left motor runs backward and right motor runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -294,7 +304,7 @@ void leftIRLineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if(leftIRVal==LOW  && middleIRVal==LOW){                    //When the left and middle sensor is 'not' on line
+  else if(leftIRVal==HIGH  && middleIRVal==HIGH){                    //When the left and middle sensor is 'not' on line
     analogWrite(leftMotorForward,medSpeed);                           //left motor runs forward and right motor runs backward
     digitalWrite(leftMotorBackward,LOW);          
     // digitalWrite(leftMotorEN,HIGH);
@@ -305,7 +315,7 @@ void leftIRLineFollowing(){
     // digitalWrite(rightMotorEN,LOW);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if(leftIRVal==LOW && middleIRVal==HIGH){                    //when both the left not on line and 
+  else if(leftIRVal==HIGH && middleIRVal==LOW){                    //when both the left not on line and 
     analogWrite(leftMotorForward,medSpeed);                           //middle sensor is on line then the bot goes
     digitalWrite(leftMotorBackward,LOW);                           // straight i.e. both the motors runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -320,8 +330,8 @@ void leftIRLineFollowing(){
 
 void reverseLineFollowing(){
   Serial.print("reverseLINE");
-  display.setCursor(0, 30);
-  display.print("reverseLINE");
+  // display.setCursor(0, 30);
+  // display.print("reverseLINE");
   //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
   //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
 
@@ -329,7 +339,7 @@ void reverseLineFollowing(){
   rightIRVal = digitalRead(rightIR);
   middleIRVal = digitalRead(middleIR);
 
-  if (leftIRVal==LOW && middleIRVal==LOW && rightIRVal==LOW){         //When no line is detected the bot stops
+  if (leftIRVal==HIGH && middleIRVal==HIGH && rightIRVal==HIGH){         //When no line is detected the bot stops
     digitalWrite(leftMotorForward,LOW);
     digitalWrite(leftMotorBackward,LOW);
     // digitalWrite(leftMotorEN,LOW);
@@ -339,7 +349,7 @@ void reverseLineFollowing(){
     // digitalWrite(rightMotorEN,LOW);
   }
 
-  else if (leftIRVal==HIGH  && middleIRVal==HIGH && rightIRVal==LOW){ //When the left and middle sensor is on line
+  else if (leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){ //When the left and middle sensor is on line
     digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
     analogWrite(leftMotorBackward,medSpeed);                              //runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -349,7 +359,7 @@ void reverseLineFollowing(){
     digitalWrite(rightMotorBackward,LOW);
     // digitalWrite(rightMotorEN,LOW);
   }
-  else if (leftIRVal==HIGH && middleIRVal==LOW && rightIRVal==LOW){   //When the middle and right sensor is 'not' on line
+  else if (leftIRVal==LOW && middleIRVal==HIGH && rightIRVal==HIGH){   //When the middle and right sensor is 'not' on line
     digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
     analogWrite(leftMotorBackward,medSpeed);                              //runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -359,7 +369,7 @@ void reverseLineFollowing(){
     digitalWrite(rightMotorBackward,LOW);
     // digitalWrite(rightMotorEN,LOW);
   }
-  else if(leftIRVal==LOW  && middleIRVal==HIGH && rightIRVal==HIGH){  //When the middle and right sensor is on line
+  else if(leftIRVal==HIGH  && middleIRVal==LOW && rightIRVal==LOW){  //When the middle and right sensor is on line
     digitalWrite(leftMotorForward,LOW);                              //the right motor is stopped and left motor
     digitalWrite(leftMotorBackward,LOW);                              // runs forward
     // digitalWrite(leftMotorEN,LOW);
@@ -369,7 +379,7 @@ void reverseLineFollowing(){
     // digitalWrite(leftMotorEN,HIGH);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if(leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){   //When the left and middle sensor is 'not' on line
+  else if(leftIRVal==HIGH  && middleIRVal==HIGH && rightIRVal==LOW){   //When the left and middle sensor is 'not' on line
     digitalWrite(leftMotorForward,LOW);                              //but the right sensor is on line then,
     digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
     // digitalWrite(leftMotorEN,LOW);
@@ -379,7 +389,7 @@ void reverseLineFollowing(){
     // digitalWrite(rightMotorEN,HIGH);
     // analogWrite(rightMotorEN,lowSpeed);
   }
-  else if(leftIRVal==LOW && middleIRVal==HIGH && rightIRVal==LOW){    //when both the left and right sensors are not on line
+  else if(leftIRVal==HIGH && middleIRVal==LOW && rightIRVal==HIGH){    //when both the left and right sensors are not on line
     digitalWrite(leftMotorForward,LOW);                              // and middle sensor is on line then the bot goes
     analogWrite(leftMotorBackward,medSpeed);                              // straight i.e. both the motors runs forward
     // digitalWrite(leftMotorEN,HIGH);
@@ -392,10 +402,85 @@ void reverseLineFollowing(){
   }
 }
 
+void IR2reverseLineFollowing(){
+  Serial.print("IR2reverseLINE");
+  // display.setCursor(0, 30);
+  // display.print("reverseLINE");
+  //"IR sensor ON"    or    "Detects object"      or    "not on line"   then the output is     "0"    or    "LOW"
+  //"IR sensor OFF"   or    "Detects no object"   or    "on line"       then the output is     "1"    or    "HIGH"
+
+  leftIRVal = digitalRead(leftIR);
+  rightIRVal = digitalRead(rightIR);
+  middleIRVal = digitalRead(middleIR);
+
+  if (leftIRVal==HIGH && middleIRVal==HIGH && rightIRVal==HIGH){         //When no line is detected the bot stops
+    digitalWrite(leftMotorForward,LOW);
+    digitalWrite(leftMotorBackward,LOW);
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+  /*
+  else if (leftIRVal==LOW  && middleIRVal==LOW && rightIRVal==HIGH){ //When the left and middle sensor is on line
+    digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
+    analogWrite(leftMotorBackward,medSpeed);                              //runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }*/
+  else if (/*leftIRVal==LOW &&*/ middleIRVal==HIGH && rightIRVal==HIGH){   //When the middle and right sensor is 'not' on line
+    digitalWrite(leftMotorForward,LOW);                               //the left motor is stopped and right motor
+    analogWrite(leftMotorBackward,medSpeed);                              //runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    digitalWrite(rightMotorBackward,LOW);
+    // digitalWrite(rightMotorEN,LOW);
+  }
+  else if(/*leftIRVal==HIGH  &&*/ middleIRVal==LOW && rightIRVal==LOW){  //When the middle and right sensor is on line
+    digitalWrite(leftMotorForward,LOW);                              //the right motor is stopped and left motor
+    digitalWrite(leftMotorBackward,LOW);                              // runs forward
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(/*leftIRVal==HIGH  &&*/ middleIRVal==HIGH && rightIRVal==LOW){   //When the left and middle sensor is 'not' on line
+    digitalWrite(leftMotorForward,LOW);                              //but the right sensor is on line then,
+    digitalWrite(leftMotorBackward,LOW);                              //left motor runs forward and right motor runs backward
+    // digitalWrite(leftMotorEN,LOW);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+  else if(/*leftIRVal==HIGH &&*/ middleIRVal==LOW && rightIRVal==HIGH){    //when both the left and right sensors are not on line
+    digitalWrite(leftMotorForward,LOW);                              // and middle sensor is on line then the bot goes
+    analogWrite(leftMotorBackward,medSpeed);                              // straight i.e. both the motors runs forward
+    // digitalWrite(leftMotorEN,HIGH);
+    // analogWrite(leftMotorEN,lowSpeed);
+
+    digitalWrite(rightMotorForward,LOW);
+    analogWrite(rightMotorBackward,medSpeed);
+    // digitalWrite(rightMotorEN,HIGH);
+    // analogWrite(rightMotorEN,lowSpeed);
+  }
+}
+
+
 void botForward(){
   Serial.print("botForward");
-  display.setCursor(0, 30);
-  display.print("botForward");
+  // display.setCursor(0, 30);
+  // display.print("botForward");
 
   analogWrite(leftMotorForward,lowSpeed);
   digitalWrite(leftMotorBackward,LOW);
@@ -410,8 +495,8 @@ void botForward(){
 
 void botBackward(){
   Serial.print("botBackward");
-  display.setCursor(0, 30);
-  display.print("botBackward");
+  // display.setCursor(0, 30);
+  // display.print("botBackward");
   digitalWrite(leftMotorForward,LOW);
   analogWrite(leftMotorBackward,lowSpeed);
   //  digitalWrite(leftMotorEN,LOW);
@@ -425,8 +510,8 @@ void botBackward(){
 
 void botStop(){
   Serial.print("Stopped");
-  display.setCursor(0, 30);
-  display.print("Stopped");
+  // // display.setCursor(0, 30);
+  // // display.print("Stopped");
 
   digitalWrite(leftMotorForward,LOW);
   digitalWrite(leftMotorBackward,LOW);
@@ -440,9 +525,9 @@ void botStop(){
 }
 
 void loop(){
-  display.clearDisplay();  /*Clear display*/
-  display.setTextSize(2);  /*OLED screen text size defined*/
-  display.setTextColor(WHITE); /*OLED screen text color*/
+  // // // // // // display.clearDisplay();  /*Clear display*/
+  // // display.setTextSize(2);  /*OLED screen text size defined*/
+  // // display.setTextColor(WHITE); /*OLED screen text color*/
 
   currentMillis_reedSwitch= millis();
   currentStatereedSwitch = digitalRead(reedSwitch);
@@ -462,11 +547,11 @@ void loop(){
     } 
   }
   
-  if (currentSlot==allotedSlot){
-    digitalWrite(LED_BUILTIN,HIGH);
-  }
-  else
-    digitalWrite(LED_BUILTIN,LOW);
+  // if (currentSlot==allotedSlot){
+  //   digitalWrite(LED_BUILTIN,HIGH);
+  // }
+  // else
+  //   digitalWrite(LED_BUILTIN,LOW);
 
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -505,8 +590,9 @@ void loop(){
       botBackward();
     }while(IRSensorsNotOnLine()==1); 
     do{
+      IR2reverseLineFollowing();
       // reverseLineFollowing();
-      botBackward();
+      // botBackward();
     }while(IRSensorsOnLine()==0 && IRSensorsNotOnLine()==0);
     do{
       botForward();
@@ -536,17 +622,17 @@ void loop(){
   Serial.print("  Dist:");
   Serial.println(distance);
 
-  display.setTextSize(1);  /*OLED screen text size defined*/
+  // display.setTextSize(1);  /*OLED screen text size defined*/
 
-  display.setCursor(0, 0);
-  display.print("  CS:");
-  display.println(currentSlot);
-  display.setCursor(0, 10);
-  display.print("  RS:");
-  display.println(digitalRead(reedSwitch));
-  display.setCursor(0, 20);
-  display.print("  Dist:");
-  display.println(distance);
+  // display.setCursor(0, 0);
+  // display.print("  CS:");
+  // display.println(currentSlot);
+  // display.setCursor(0, 10);
+  // display.print("  RS:");
+  // display.println(digitalRead(reedSwitch));
+  // display.setCursor(0, 20);
+  // display.print("  Dist:");
+  // display.println(distance);
   
-  display.display();
+  // // display.display();
 }
