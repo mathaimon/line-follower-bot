@@ -56,7 +56,7 @@ int middleIRVal;
 int rightIRVal;
 
 int lowSpeed= 60;
-int medSpeed= 100;
+int medSpeed= 150;
 int highSpeed=255;
 
 // // Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
